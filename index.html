@@ -356,6 +356,37 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opa
 .pbar2 i{display:block;height:100%;background:linear-gradient(90deg,var(--kc),color-mix(in srgb,var(--kc) 40%,#fff));box-shadow:0 0 10px var(--kc);transition:width .4s linear}
 .pc2.warn .pbar2 i{background:var(--gold);box-shadow:0 0 10px var(--gold)}
 @media (prefers-reduced-motion:reduce){.pglow,.pmed img{animation:none}}
+/* ===== Pets e trajes: cartões estilo PC ===== */
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.pcx{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;padding:14px 10px 12px;border-radius:20px;overflow:hidden;isolation:isolate;
+  background:linear-gradient(160deg,color-mix(in srgb,var(--kc) 13%,transparent),rgba(255,255,255,.03) 55%);border:1px solid color-mix(in srgb,var(--kc) 35%,transparent);
+  box-shadow:0 14px 28px -20px #000;animation:rise .45s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*60ms)}
+.pcx::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,transparent,var(--kc),transparent)}
+.pcx.run{border-color:color-mix(in srgb,var(--kc) 55%,transparent);box-shadow:0 0 26px -12px var(--kc)}
+.pcx.warn{border-color:rgba(251,191,36,.6);box-shadow:0 0 26px -10px rgba(251,191,36,.6)}
+.pcx.done{border-color:rgba(251,113,133,.6);animation:rise .45s both,pulse 1.2s infinite .5s}
+.kart2{position:absolute;right:-22px;top:-8px;width:110px;height:120px;z-index:-1;pointer-events:none;display:flex;align-items:center;justify-content:center;
+  -webkit-mask-image:radial-gradient(closest-side at 60% 45%,#000 50%,transparent 100%);mask-image:radial-gradient(closest-side at 60% 45%,#000 50%,transparent 100%)}
+.kart2 img{max-width:100%;max-height:100%;object-fit:contain;opacity:.55;filter:drop-shadow(0 0 12px color-mix(in srgb,var(--kc) 65%,transparent));animation:bfloat 5s ease-in-out infinite alternate}
+.pcx .ptag{font-size:9.5px;padding:2px 8px}
+.pcx .pname{font-size:15.5px;margin:6px 0 4px;max-width:100%}
+.pchar2{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);max-width:100%}
+.pchar2 b{color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cgrp .pchar2{display:none}
+.pbig{margin:10px 0 6px}
+.pbig .ring{width:100px;height:100px}.pbig .ring svg{width:100px;height:100px}
+.pbig .ring circle{stroke-width:6}
+.pbig .ring .fg{stroke:var(--kc)}
+.pbig .ring svg{filter:drop-shadow(0 0 8px color-mix(in srgb,var(--kc) 60%,transparent))}
+.pcx.warn .pbig .ring .fg{stroke:var(--gold)}.pcx.done .pbig .ring .fg{stroke:var(--bad)}
+.pbig .time b{font-size:20px}.pbig .time small{font-size:10.5px}
+.pbig .ring::after{content:"";position:absolute;inset:14px;border-radius:50%;z-index:-1;background:radial-gradient(circle,color-mix(in srgb,var(--kc) 22%,transparent),transparent 70%)}
+.pend2{font-size:11px;color:var(--muted);min-height:15px}
+.pcx.warn .pend2{color:var(--gold);font-weight:700}.pcx.done .pend2{color:var(--bad);font-weight:700}
+.pdur2{font-size:10.5px;color:var(--muted);opacity:.8;margin-top:2px}
+.pacts2{display:flex;gap:6px;margin-top:10px}
+.pacts2 .ib{width:40px;height:36px}
+@media (prefers-reduced-motion:reduce){.kart2 img{animation:none}}
 </style>
 </head>
 <body>
@@ -664,18 +695,20 @@ function renderHero(){
     <div class="next" data-nx>${heroNext()}</div>`;
 }
 
+const durTxt = s => `${Math.floor(s/86400)}d ${Math.floor(s%86400/3600)}h ${Math.floor(s%3600/60)}m`;
+// Cartão igual ao do PC: imagem de fundo, etiqueta, nome, personagem, roda grande e botões
 const itemCard = (t,k) => { const st = state(t), tr = t.page==="trajes", img = itemImgSrc(t);
   const title = tr ? t.kind : (t.name && t.name!==t.race ? t.name : (t.race||"Pet")), tag = tr ? "Traje" : (t.race||"Pet");
-  return `<div class="pc2 ${st}" data-id="${t.id}" style="--kc:${kCol(t)};--i:${k}">
-    <div class="pmed"><div class="pglow"></div>${img?`<img src="${img}" alt="">`:`<span class="pemo">${tr?"✦":"❖"}</span>`}</div>
-    <div class="pinfo"><span class="ptag">${esc(tag)}</span>
-      <div class="pname">${esc(title)}</div>
-      <div class="pchar">${charImg(t.char||"","cimg")}<span>${esc(t.char||"")}</span></div></div>
-    <div class="ptime">${ring(t,itemTime(t))}</div>
-    <div class="pfoot"><span class="pend" data-e>${endText(t)}</span>
-      <span class="pacts"><button class="ib" onclick="openAdjust('${t.id}')" aria-label="Ajustar">✎</button>${st==="stop"
-        ?`<button class="ib go2" onclick="startT('${t.id}')" aria-label="Iniciar">▶</button>`:`<button class="ib" onclick="restart('${t.id}')" aria-label="Recomeçar">↻</button>`}<button class="ib dl2" onclick="del('${t.id}')" aria-label="Apagar">🗑</button></span></div>
-    <div class="pbar2"><i data-pb style="width:${pctOf(t)}%"></i></div>
+  return `<div class="pcx ${st}" data-id="${t.id}" style="--kc:${kCol(t)};--i:${k}">
+    ${img?`<div class="kart2"><img src="${img}" alt=""></div>`:""}
+    <span class="ptag">${esc(tag)}</span>
+    <div class="pname">${esc(title)}</div>
+    <div class="pchar2">${charImg(t.char||"","cimg")}<b>${esc(t.char||"")}</b></div>
+    <div class="pbig">${ring(t,itemTime(t))}</div>
+    <div class="pend2" data-e>${endText(t)}</div>
+    <div class="pdur2">Duração: ${durTxt(t.dur||0)}</div>
+    <div class="pacts2"><button class="ib" onclick="openAdjust('${t.id}')" aria-label="Ajustar">✎</button>${st==="stop"
+      ?`<button class="ib go2" onclick="startT('${t.id}')" aria-label="Iniciar">▶</button>`:`<button class="ib go2" onclick="restart('${t.id}')" aria-label="Recomeçar">↻</button>`}<button class="ib dl2" onclick="del('${t.id}')" aria-label="Apagar">🗑</button></div>
   </div>`; };
 
 // ===== Desenhar =====
@@ -704,13 +737,13 @@ function render(){
     $("list").innerHTML = `<div class="empty"><div class="eico">${UI.tab==="trajes"?"✦":"❖"}</div><b>Sem ${UI.tab==="trajes"?"trajes":"pets"} ${UI.filter?"para "+esc(UI.filter):""}</b>Carrega no <b style="display:inline;font-size:inherit">+</b> para adicionar.</div>`;
     return;
   }
-  if(UI.filter){ $("list").innerHTML = L.map(itemCard).join(""); return; }
+  if(UI.filter){ $("list").innerHTML = `<div class="pgrid">${L.map(itemCard).join("")}</div>`; return; }
   const chars = [...new Set(L.map(t=>t.char||"—"))];
   let k = 0;
   $("list").innerHTML = chars.map(c=>{ const its = L.filter(t=>(t.char||"—")===c), hot = its.filter(t=>["warn","done"].includes(state(t))).length;
     return `<section class="cgrp"><div class="chead">${charImg(c,"cimg big")}<div class="cname"><b>${esc(c)}</b><small>${esc(raceOf(c))}</small></div>
       <span class="ccount ${hot?"hot":""}">${hot?hot+" a acabar":its.length+" "+(UI.tab==="trajes"?(its.length===1?"traje":"trajes"):(its.length===1?"pet":"pets"))}</span></div>
-      ${its.map(t=>itemCard(t,k++)).join("")}</section>`; }).join("");
+      <div class="pgrid">${its.map(t=>itemCard(t,k++)).join("")}</div></section>`; }).join("");
 }
 
 function bossExtras(t){
@@ -986,7 +1019,7 @@ setInterval(()=>{
   const sig = sigOf();
   if(changed || sig!==lastSig){ lastSig = sig; if(!sheetOpen()) render(); return; }
   const nx = document.querySelector("[data-nx]"); if(nx) nx.innerHTML = heroNext();
-  document.querySelectorAll(".it[data-id],.bh[data-id],.pc2[data-id]").forEach(el=>{
+  document.querySelectorAll(".it[data-id],.bh[data-id],.pc2[data-id],.pcx[data-id]").forEach(el=>{
     const t = find(el.dataset.id); if(!t) return;
     const tm = el.querySelector("[data-t]"); if(tm) tm.innerHTML = t.page==="boss" ? bossTime(t) : itemTime(t);
     const f = el.querySelector("[data-f]"); if(f) f.style.strokeDashoffset = ringOff(t) * (+f.dataset.c||RC) / RC;
