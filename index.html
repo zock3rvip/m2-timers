@@ -556,9 +556,9 @@ const Sync = {
         const rec = {...(data.records||{})}; for(const k in (S.records||{})) if(rec[k]==null || S.records[k]<rec[k]) rec[k] = S.records[k];
         S.chars = ch; S.records = rec; S.cinfo = Object.assign({}, S.cinfo||{}, data.cinfo||{});
         const a = STATS(), b = Object.assign({bosses:{},chests:0}, data.stats||{}); for(const k in b.bosses) a.bosses[k] = Math.max(a.bosses[k]||0, b.bosses[k]); a.chests = Math.max(a.chests||0, b.chests||0);
-        S.todos = Object.assign({}, data.todos||{}, S.todos||{});
+        S.todos = mergeTodos(Object.assign({}, data.todos||{}, S.todos||{}), S.todos||{});
         S.runs = mergeRuns(S.runs, data.runs);
-      } else { S.chars = data.chars||[]; S.records = data.records||{}; S.cinfo = data.cinfo||{}; S.stats = data.stats||{bosses:{},chests:0}; S.todos = data.todos||{}; S.runs = data.runs ? mergeRuns(data.runs, S.runs) : (S.runs||[]); }
+      } else { S.chars = data.chars||[]; S.records = data.records||{}; S.cinfo = data.cinfo||{}; S.stats = data.stats||{bosses:{},chests:0}; S.todos = mergeTodos(data.todos||{}, S.todos||{}); S.runs = data.runs ? mergeRuns(data.runs, S.runs) : (S.runs||[]); }
       return;
     }
     if(id.startsWith("h:")){ if(!data) return; S.history = S.history||[];
@@ -764,11 +764,26 @@ const bioEnd = (x,p) => x[p+"e"] || (x[p+"s"] + BH(p)*3600e3*(1-(x[p+"p"]||0)/10
 const bioLeft = (x,p) => Math.max(0, Math.ceil((bioEnd(x,p)-Date.now())/1000));
 function bioOf(c){ S.todos = S.todos||{}; const L = S.todos[c] = S.todos[c]||[]; let x = L.find(y=>isBio(y.t)); if(!x){ x = {t:"Biólogo", d:false}; L.unshift(x); } return x; }
 const bioOn = (x,p) => !!x[p+"s"];
+// Biólogo: o timer de cada personagem nunca se perde quando outro aparelho manda dados antigos —
+// fica sempre a versão mudada mais recentemente (campo bu = quando mexeste no biólogo).
+const BIO_F = ["d","bs","bp","be","yo","ys","yp","ye","bu"];
+const bioStamp = x => x ? (x.bu || Math.max(x.bs||0, x.ys||0)) : 0;
+function mergeTodos(remote, local){
+  const out = JSON.parse(JSON.stringify(remote || {}));
+  for(const c in (local || {})){
+    const L = local[c] || [], lb = L.find(x=>isBio(x.t)); if(!lb) continue;
+    if(!out[c]){ out[c] = JSON.parse(JSON.stringify(L)); continue; }
+    let rb = out[c].find(x=>isBio(x.t));
+    if(!rb){ out[c].unshift(JSON.parse(JSON.stringify(lb))); continue; }
+    if(bioStamp(lb) > bioStamp(rb)) BIO_F.forEach(k=>{ if(k in lb) rb[k] = lb[k]; else delete rb[k]; });
+  }
+  return out;
+}
 function bioCheck(c,p){ const x = bioOf(c), now = Date.now();
   if(p==="b"){ x.d = !x.d; if(x.d){ x.bs = now; x.bp = 0; x.be = now + BIO_H*3600e3; } else { x.bs = null; x.bp = 0; x.be = null; } }
   else { x.yo = !x.yo; if(x.yo){ x.ys = now; x.yp = 0; x.ye = now + YOH_H*3600e3; } else { x.ys = null; x.yp = 0; x.ye = null; } }
-  save(); render(); }
-function bioCut(c,p,q){ const x = bioOf(c), now = Date.now(); if(!x[p+"s"]) return; x[p+"e"] = now + (bioEnd(x,p)-now)*(1-q/100); save(); render(); }
+  x.bu = now; save(); render(); }
+function bioCut(c,p,q){ const x = bioOf(c), now = Date.now(); if(!x[p+"s"]) return; x[p+"e"] = now + (bioEnd(x,p)-now)*(1-q/100); x.bu = now; save(); render(); }
 function bioRow(c,x,p){ const on = bioOn(x,p), chk = p==="b" ? !!x.d : !!x.yo, s = on ? bioLeft(x,p) : BH(p)*3600;
   const pct = on ? Math.max(0,Math.min(100, s/(BH(p)*3600)*100)) : 100, ce = esc(JSON.stringify(c));
   return `<div class="brow ${p==="y"?"yo":""} ${on?"on":""}">
@@ -790,7 +805,7 @@ function bioTickM(){
   if(!S.todos) return false; let ch = false;
   for(const c in S.todos) (S.todos[c]||[]).forEach(x=>{ if(!isBio(x.t)) return;
     ["b","y"].forEach(p=>{ if(!x[p+"s"] || bioLeft(x,p) > 0) return;
-      x[p+"s"] = null; x[p+"p"] = 0; x[p+"e"] = null; if(p==="b") x.d = false; else x.yo = false; ch = true;
+      x[p+"s"] = null; x[p+"p"] = 0; x[p+"e"] = null; if(p==="b") x.d = false; else x.yo = false; ch = true; x.bu = Date.now();
       beep(); toast(p==="y" ? "Já podes entregar o biólogo da Yohara no "+c+"!" : "Já podes entregar o biólogo no "+c+"!", "good"); }); });
   return ch;
 }
